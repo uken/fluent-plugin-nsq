@@ -40,7 +40,12 @@ module Fluent
 
       chunk.msgpack_each do |tag, time, record|
         next unless record.is_a? Hash
-        @producer.write(record.to_json)
+        #TODO get rid of this extra copy
+        tagged_record = record.merge(
+          _key: tag,
+          _ts: time
+        )
+        @producer.write(tagged_record.to_json)
       end
     end
   end

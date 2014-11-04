@@ -3,8 +3,8 @@ $:.push File.expand_path("../lib", __FILE__)
 Gem::Specification.new do |s|
   s.name          = "fluent-plugin-nsq"
   s.version       = `cat VERSION`
-  s.authors       = ["lxfontes"]
-  s.email         = ["lxfontes+nsq@gmail.com"]
+  s.authors       = ["lxfontes", "dterror"]
+  s.email         = ["lucas@uken.com", "diogo@uken.com"]
   s.description   = %q{NSQ output plugin for Fluentd}
   s.summary       = %q{output plugin for fluentd}
   s.homepage      = "https://github.com/uken/fluent-plugin-nsq"
