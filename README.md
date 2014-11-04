@@ -22,5 +22,5 @@ NSQ daemons are discovered through lookupd.
 
 Don't forget to tag releases properly.
 
-    git tag v$(cat VERSION)
+    git tag v$(head -1 VERSION)
     git push --tags
