@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.test_files    = git_files.grep(%r{^(test|spec|features)/})
   s.require_paths = ["lib"]
 
-  s.add_runtime_dependency 'fluentd'
-  s.add_runtime_dependency 'nsq-ruby'
-  s.add_development_dependency 'rake'
+  s.add_runtime_dependency 'fluentd', '~> 0.10'
+  s.add_runtime_dependency 'nsq-ruby', '~> 1.0'
+  s.add_development_dependency 'rake', '~> 10'
 end
