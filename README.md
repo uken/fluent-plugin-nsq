@@ -17,3 +17,10 @@ NSQ daemons are discovered through lookupd.
       nsqlookupd 127.0.0.1:4161
       topic logs
     </match>
+
+## dev
+
+Don't forget to tag releases properly.
+
+    git tag v$(cat VERSION)
+    git push --tags
