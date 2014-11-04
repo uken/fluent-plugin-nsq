@@ -15,19 +15,21 @@ module Fluent
     def configure(conf)
       super
 
-      raise ConfigError, "Missing nsqlookupd" unless @nsqlookupd
-      raise ConfigError, "Missing topic" unless @topic
+      fail ConfigError, 'Missing nsqlookupd' unless @nsqlookupd
+      fail ConfigError, 'Missing topic' unless @topic
     end
 
     def start
+      super
       lookupds = @nsqlookupd.split(',')
       @producer = Nsq::Producer.new(
-        nslookupd: lookupds,
+        nsqlookupd: lookupds,
         topic: @topic
       )
     end
 
     def shutdown
+      super
       @producer.terminate
     end
 
@@ -40,7 +42,7 @@ module Fluent
 
       chunk.msgpack_each do |tag, time, record|
         next unless record.is_a? Hash
-        #TODO get rid of this extra copy
+        # TODO get rid of this extra copy
         tagged_record = record.merge(
           _key: tag,
           _ts: time
