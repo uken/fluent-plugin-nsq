@@ -44,8 +44,9 @@ module Fluent
         next unless record.is_a? Hash
         # TODO get rid of this extra copy
         tagged_record = record.merge(
-          _key: tag,
-          _ts: time
+          :_key => tag,
+          :_ts => time,
+          :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
         )
         @producer.write(tagged_record.to_json)
       end
