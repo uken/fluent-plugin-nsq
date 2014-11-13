@@ -88,7 +88,7 @@ module Fluent
       if @time_key
         record[@time_key]
       else
-        msg.timestamp
+        msg.timestamp.to_i
       end
     end
   end
