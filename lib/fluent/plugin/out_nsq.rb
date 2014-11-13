@@ -1,5 +1,4 @@
 # coding: utf-8
-require 'nsq'
 
 module Fluent
   class NSQOutput < BufferedOutput
@@ -10,6 +9,7 @@ module Fluent
 
     def initialize
       super
+      require 'nsq'
     end
 
     def configure(conf)
