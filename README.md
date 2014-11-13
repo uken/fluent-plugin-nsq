@@ -1,6 +1,6 @@
-# NSQ output plugin for Fluentd
+# NSQ plugin for Fluentd
 
-Buffers and forwards log entries to [nsq](http://nsq.io) for realtime processing.
+Input and Output plugins for [nsq](http://nsq.io).
 
 NSQ daemons are discovered through lookupd.
 
@@ -9,6 +9,17 @@ NSQ daemons are discovered through lookupd.
     gem install fluent-plugin-nsq
 
 ## Usage
+
+### Input
+
+    <source>
+      type nsq
+      topic webservers
+      nsqlookupd 127.0.0.1:4161
+      tag_source topic
+    </source>
+
+### Output
 
     <match **>
       type nsq
