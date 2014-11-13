@@ -13,7 +13,7 @@ $:.push File.dirname(__FILE__)
 class TestNSQOutput < Test::Unit::TestCase
   TCONFIG = %[
     nsqlookupd localhost:4161
-    topic logs
+    topic logs_out
   ]
   def setup
     #Nsq.logger = Logger.new(STDOUT)
@@ -35,7 +35,7 @@ class TestNSQOutput < Test::Unit::TestCase
 
   def test_wrong_config
     assert_raise Fluent::ConfigError do
-      d = create_driver('test','')
+      create_driver('test','')
     end
   end
 
