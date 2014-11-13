@@ -6,6 +6,7 @@ module Fluent
 
     config_param :topic, :string, default: nil
     config_param :channel, :string, default: 'fluent_nsq_input'
+    config_param :in_flight, :integer, default: 100
     config_param :nsqlookupd, :string, default: nil
     config_param :tag, :string, default: '_key'
     config_param :time_key, :string, default: nil
@@ -34,6 +35,7 @@ module Fluent
       fail ConfigError, 'Missing nsqlookupd' unless @nsqlookupd
       fail ConfigError, 'Missing topic' unless @topic
       fail ConfigError, 'Missing channel' unless @channel
+      fail ConfigError, 'in_flight needs to be bigger than 0' unless @in_flight > 0
     end
 
     def start
@@ -42,7 +44,8 @@ module Fluent
       @consumer = Nsq::Consumer.new(
         nsqlookupd: lookupds,
         topic: @topic,
-        channel: @channel
+        channel: @channel,
+        max_in_flight: @in_flight
       )
       @running = true
       @thread = Thread.new(&method(:consume))
