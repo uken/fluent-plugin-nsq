@@ -48,7 +48,11 @@ module Fluent
           :_ts => time,
           :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
         )
-        @producer.write(tagged_record.to_json)
+        begin
+          @producer.write(tagged_record.to_json)
+        rescue => e
+          log.warn("nsq: #{e}")
+        end
       end
     end
   end
