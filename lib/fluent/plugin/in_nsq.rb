@@ -27,6 +27,7 @@ module Fluent
       super
       require 'cool.io'
       require 'nsq'
+      require 'yajl'
     end
 
     def configure(conf)
@@ -66,7 +67,7 @@ module Fluent
 
     def consume_one
       msg = @consumer.pop
-      record = JSON.parse(msg.body)
+      record = Yajl.load(msg.body.force_encoding('UTF-8'))
       record_tag = tag_for_record(record)
       record_time = time_for_record(record, msg)
       Engine.emit(record_tag, record_time, record)

@@ -10,6 +10,7 @@ module Fluent
     def initialize
       super
       require 'nsq'
+      require 'yajl'
     end
 
     def configure(conf)
@@ -49,7 +50,7 @@ module Fluent
           :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
         )
         begin
-          @producer.write(tagged_record.to_json)
+          @producer.write(Yajl.dump(tagged_record))
         rescue => e
           log.warn("nsq: #{e}")
         end
