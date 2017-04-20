@@ -2,6 +2,7 @@ require 'test/unit'
 
 require 'fluent/test'
 require 'fluent/plugin/in_nsq'
+require 'nsq-cluster'
 
 require 'date'
 
@@ -21,6 +22,10 @@ class TestNSQInput < Test::Unit::TestCase
     Fluent::Test.setup
   end
 
+  def teardown
+    @cluster.destroy if @cluster
+  end
+
   def test_configure
     d = create_driver
     assert_not_nil d.instance.topic
@@ -31,9 +36,11 @@ class TestNSQInput < Test::Unit::TestCase
   end
 
   def create_producer
+    @cluster = NsqCluster.new(nsqd_count: 3, nsqlookupd_count: 2)
+    nsqlookupd = @cluster.nsqlookupd.first
     Nsq::Producer.new(
-      nsqlookupd: ['127.0.0.1:4161'],
-      topic: 'logs_in'
+      nsqlookupd: "#{nsqlookupd.host}:#{nsqlookupd.http_port}",
+      topic: 'logs_in',
     )
   end
 
