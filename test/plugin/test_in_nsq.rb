@@ -58,7 +58,12 @@ class TestNSQInput < Test::Unit::TestCase
     d = create_driver
     d.run do
       prod = create_producer
-      sleep(1)
+      connected = false
+      while(!connected) do
+        connected = prod.connected?
+        break if connected
+        sleep(1)
+      end
       prod.write(sample_record.to_json)
       prod.write(sample_record.to_json)
       prod.write(sample_record.to_json)
