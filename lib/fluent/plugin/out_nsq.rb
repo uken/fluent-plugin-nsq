@@ -30,8 +30,8 @@ module Fluent
     end
 
     def shutdown
-      super
       @producer.terminate
+      super
     end
 
     def format(tag, time, record)

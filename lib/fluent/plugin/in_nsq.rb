@@ -59,9 +59,9 @@ module Fluent
     end
 
     def shutdown
-      super
       @running = false
       @consumer.terminate
+      super
     end
 
     private
