@@ -1,4 +1,5 @@
 # coding: utf-8
+require 'fluent/input'
 
 module Fluent
   class NSQInput < Input
