@@ -16,7 +16,7 @@ module Fluent
     def configure(conf)
       super
 
-      fail ConfigError, 'Missing nsqlookupd' unless @nsqlookupd
+      fail ConfigError, 'Missing nsqd' unless @nsqd
       fail ConfigError, 'Missing topic' unless @topic
     end
 
