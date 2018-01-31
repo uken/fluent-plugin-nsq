@@ -49,7 +49,11 @@ module Fluent
           :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
         )
         begin
-          @producer.write(Yajl.dump(tagged_record))
+          if record.key?("NSQTopic")
+            @producer.write_to_topic(record["NSQTopic"], Yajl.dump(tagged_record))
+          else
+            @producer.write(Yajl.dump(tagged_record))
+          end
         rescue => e
           log.warn("nsq: #{e}")
         end
