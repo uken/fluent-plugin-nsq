@@ -5,7 +5,7 @@ module Fluent
     Plugin.register_output('nsq', self)
 
     config_param :topic, :string, default: nil
-    config_param :nsqlookupd, :string, default: nil
+    config_param :nsqd, :string, default: nil
 
     def initialize
       super
@@ -22,9 +22,8 @@ module Fluent
 
     def start
       super
-      lookupds = @nsqlookupd.split(',')
       @producer = Nsq::Producer.new(
-        nsqlookupd: lookupds,
+        nsqd: @nsqd,
         topic: @topic
       )
     end
