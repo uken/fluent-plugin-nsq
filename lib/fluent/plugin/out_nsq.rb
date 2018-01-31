@@ -11,16 +11,23 @@ module Fluent
       super
       require 'nsq'
       require 'yajl'
+
+      log.info("nsq: initialize called!")
     end
 
     def configure(conf)
       super
+
+      log.info("nsq: configure called! @nsqd=#{@nsqd}, @topic=#{@topic}")
 
       fail ConfigError, 'Missing nsqd' unless @nsqd
     end
 
     def start
       super
+
+      log.info("nsq: start called!")
+
       @producer = Nsq::Producer.new(
         nsqd: @nsqd,
         topic: @topic
@@ -29,6 +36,9 @@ module Fluent
 
     def shutdown
       super
+
+      log.info("nsq: shutdown called!")
+
       @producer.terminate
     end
 
