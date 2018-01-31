@@ -17,7 +17,6 @@ module Fluent
       super
 
       fail ConfigError, 'Missing nsqd' unless @nsqd
-      fail ConfigError, 'Missing topic' unless @topic
     end
 
     def start
@@ -52,7 +51,11 @@ module Fluent
           if record.key?("NSQTopic")
             @producer.write_to_topic(record["NSQTopic"], Yajl.dump(tagged_record))
           else
-            @producer.write(Yajl.dump(tagged_record))
+            if @topic.nil?
+              log.warn("can't write to nsq without default topic!")
+            else
+              @producer.write(Yajl.dump(tagged_record))
+            end
           end
         rescue => e
           log.warn("nsq: #{e}")
