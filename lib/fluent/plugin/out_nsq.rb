@@ -57,18 +57,15 @@ module Fluent
           :_ts => time,
           :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
         )
-        begin
-          if record.key?("NSQTopic")
-            @producer.write_to_topic(record["NSQTopic"], Yajl.dump(tagged_record))
+
+        if record.key?("NSQTopic")
+          @producer.write_to_topic(record["NSQTopic"], Yajl.dump(tagged_record))
+        else
+          if @topic.nil?
+            log.warn("can't write to nsq without default topic!")
           else
-            if @topic.nil?
-              log.warn("can't write to nsq without default topic!")
-            else
-              @producer.write(Yajl.dump(tagged_record))
-            end
+            @producer.write(Yajl.dump(tagged_record))
           end
-        rescue => e
-          log.warn("nsq: #{e}")
         end
       end
     end
