@@ -6,6 +6,9 @@ module Fluent
 
     config_param :topic, :string, default: nil
     config_param :nsqd, :string, default: nil
+    config_param :use_tls, :bool, default: false
+    config_param :tls_key, :string, default: nil
+    config_param :tls_cert, :string, default: nil
 
     def initialize
       super
@@ -21,6 +24,11 @@ module Fluent
       log.info("nsq: configure called! @nsqd=#{@nsqd}, @topic=#{@topic}")
 
       fail ConfigError, 'Missing nsqd' unless @nsqd
+
+      if @use_tls
+        fail ConfigError, 'Missing TLS key' unless @tls_key
+        fail ConfigError, 'Missing TLS key' unless @tls_cert
+      end
     end
 
     def start
@@ -28,10 +36,23 @@ module Fluent
 
       log.info("nsq: start called!")
 
-      @producer = Nsq::Producer.new(
-        nsqd: @nsqd,
-        topic: @topic
-      )
+      if @use_tls
+        @producer = Nsq::Producer.new(
+            nsqd: @nsqd,
+            topic: @topic,
+            tls_v1: true,
+            tls_options: {
+                key: @tls_key,
+                certificate: @tls_cert,
+                verify_mode: OpenSSL::SSL::VERIFY_NONE
+            }
+        )
+      else
+        @producer = Nsq::Producer.new(
+            nsqd: @nsqd,
+            topic: @topic
+        )
+      end
     end
 
     def shutdown
