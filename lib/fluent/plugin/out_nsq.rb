@@ -21,7 +21,7 @@ module Fluent
     def configure(conf)
       super
 
-      log.info("nsq: configure called! @nsqd=#{@nsqd}, @topic=#{@topic}")
+      log.info("nsq: configure called! @nsqd=#{@nsqd}, @topic=#{@topic}, @use_tls=#{@use_tls}, @tls_key=#{@tls_key}, @tls_cert=#{@tls_cert}")
 
       fail ConfigError, 'Missing nsqd' unless @nsqd
 
