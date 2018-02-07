@@ -36,23 +36,23 @@ module Fluent
 
       log.info("nsq: start called!")
 
+      nsq_producer_opts = {
+        nsqd: @nsqd,
+        topic: @topic
+      }
+
       if @use_tls
-        @producer = Nsq::Producer.new(
-            nsqd: @nsqd,
-            topic: @topic,
-            tls_v1: true,
-            tls_options: {
-                key: @tls_key,
-                certificate: @tls_cert,
-                verify_mode: OpenSSL::SSL::VERIFY_NONE
-            }
-        )
-      else
-        @producer = Nsq::Producer.new(
-            nsqd: @nsqd,
-            topic: @topic
-        )
+        nsq_producer_opts.update({
+          tls_v1: true,
+          tls_options: {
+              key: @tls_key,
+              certificate: @tls_cert,
+              verify_mode: OpenSSL::SSL::VERIFY_NONE
+          }
+        })
       end
+
+      @producer = Nsq::Producer.new(nsq_producer_opts)
     end
 
     def shutdown
