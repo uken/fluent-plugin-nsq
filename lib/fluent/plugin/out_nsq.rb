@@ -84,7 +84,7 @@ module Fluent
           message_batch_by_topic[record["NSQTopic"]] << serialized_record
         else
           if @topic.nil?
-            log.warn("can't write to nsq without default topic!")
+            log.warn("nsq: can't write to nsq without default topic!")
           else
             message_batch_by_topic[@topic] << serialized_record
           end
@@ -92,6 +92,7 @@ module Fluent
       end
 
       message_batch_by_topic.each do |topic, messages|
+        log.debug("nsq: posting #{messages.length} messages to topic #{topic}")
         @producer.write_to_topic(topic, *messages)
       end
     end
