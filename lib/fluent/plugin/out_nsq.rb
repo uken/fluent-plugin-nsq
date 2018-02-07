@@ -82,7 +82,7 @@ module Fluent
 
         if record.key?("NSQTopic")
           message_batch_by_topic[record["NSQTopic"]] << serialized_record
-        else if not @topic.nil?
+        elsif not @topic.nil?
           message_batch_by_topic[@topic] << serialized_record
         else
           log.warn("nsq: can't write to nsq without default topic!")
