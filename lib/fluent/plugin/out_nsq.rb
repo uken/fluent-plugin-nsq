@@ -38,7 +38,6 @@ module Fluent
 
       nsq_producer_opts = {
         nsqd: @nsqd,
-        topic: @topic
       }
 
       if @use_tls
@@ -70,24 +69,30 @@ module Fluent
     def write(chunk)
       return if chunk.empty?
 
+      message_batch_by_topic = Hash.new { |hash, key| hash[key] = [] }
+
       chunk.msgpack_each do |tag, time, record|
         next unless record.is_a? Hash
-        # TODO get rid of this extra copy
-        tagged_record = record.merge(
+        record.update(
           :_key => tag,
           :_ts => time,
           :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
         )
+        serialized_record = Yajl.dump(record)
 
         if record.key?("NSQTopic")
-          @producer.write_to_topic(record["NSQTopic"], Yajl.dump(tagged_record))
+          message_batch_by_topic[record["NSQTopic"]] << serialized_record
         else
           if @topic.nil?
             log.warn("can't write to nsq without default topic!")
           else
-            @producer.write(Yajl.dump(tagged_record))
+            message_batch_by_topic[@topic] << serialized_record
           end
         end
+      end
+
+      message_batch_by_topic.each do |topic, messages|
+        @producer.write_to_topic(topic, *messages)
       end
     end
   end
