@@ -2,7 +2,7 @@
 
 module Fluent::Plugin
   class NSQOutput < Output
-    Plugin.register_output('nsq', self)
+    Fluent::Plugin.register_output('nsq', self)
 
     config_param :topic, :string, default: nil
     config_param :nsqd, :string, default: nil
