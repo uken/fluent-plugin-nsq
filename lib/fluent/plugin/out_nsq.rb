@@ -10,6 +10,8 @@ module Fluent::Plugin
     config_param :tls_key, :string, default: nil
     config_param :tls_cert, :string, default: nil
 
+    helpers :compat_parameters, :inject
+
     def initialize
       super
       require 'nsq'
@@ -19,6 +21,7 @@ module Fluent::Plugin
     end
 
     def configure(conf)
+      compat_parameters_convert(conf, :buffer, :inject)
       super
 
       log.info("nsq: configure called! @nsqd=#{@nsqd}, @topic=#{@topic}, @use_tls=#{@use_tls}, @tls_key=#{@tls_key}, @tls_cert=#{@tls_cert}")
@@ -62,14 +65,24 @@ module Fluent::Plugin
       @producer.terminate
     end
 
+    def format(tag, time, record)
+      record = inject_values_to_record(tag, time, record)
+      [tag, time, record].to_msgpack
+    end
+
+    def formatted_to_msgpack_binary
+      true
+    end
+
     def write(chunk)
       return if chunk.empty?
 
       message_batch_by_topic = Hash.new { |hash, key| hash[key] = [] }
 
-      chunk.each do |time, record|
+      chunk.msgpack_each do |tag, time, record|
         next unless record.is_a? Hash
         record.update(
+          :_key => tag,
           :_ts => time,
           :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
         )
