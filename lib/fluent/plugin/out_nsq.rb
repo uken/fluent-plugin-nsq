@@ -27,6 +27,7 @@ module Fluent::Plugin
       log.info("nsq: configure called! @nsqd=#{@nsqd}, @topic=#{@topic}, @use_tls=#{@use_tls}, @tls_key=#{@tls_key}, @tls_cert=#{@tls_cert}")
 
       fail ConfigError, 'Missing nsqd' unless @nsqd
+      fail ConfigError, 'Missing topic' unless @topic
 
       if @use_tls
         fail ConfigError, 'Missing TLS key' unless @tls_key
@@ -77,7 +78,7 @@ module Fluent::Plugin
     def write(chunk)
       return if chunk.empty?
 
-      message_batch_by_topic = Hash.new { |hash, key| hash[key] = [] }
+      message_batch = []
 
       chunk.msgpack_each do |tag, time, record|
         next unless record.is_a? Hash
@@ -88,19 +89,13 @@ module Fluent::Plugin
         )
         serialized_record = Yajl.dump(record)
 
-        if record.key?("NSQTopic")
-          message_batch_by_topic[record["NSQTopic"]] << serialized_record
-        elsif not @topic.nil?
-          message_batch_by_topic[@topic] << serialized_record
-        else
-          log.warn("nsq: can't write to nsq without default topic!")
-        end
+        message_batch << serialized_record
       end
 
-      message_batch_by_topic.each do |topic, messages|
-        log.debug("nsq: posting #{messages.length} messages to topic #{topic}")
-        @producer.write_to_topic(topic, *messages)
-      end
+      topic = extract_placeholders(@topic, chunk.metadata)
+
+      log.debug("nsq: posting #{message_batch.length} messages to topic #{topic}")
+      @producer.write_to_topic(topic, *message_batch)
     end
   end
 end
