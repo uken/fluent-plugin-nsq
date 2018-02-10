@@ -62,19 +62,14 @@ module Fluent::Plugin
       @producer.terminate
     end
 
-    def format(tag, time, record)
-      [tag, time, record].to_msgpack
-    end
-
     def write(chunk)
       return if chunk.empty?
 
       message_batch_by_topic = Hash.new { |hash, key| hash[key] = [] }
 
-      chunk.each do |tag, time, record|
+      chunk.each do |time, record|
         next unless record.is_a? Hash
         record.update(
-          :_key => tag,
           :_ts => time,
           :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
         )
