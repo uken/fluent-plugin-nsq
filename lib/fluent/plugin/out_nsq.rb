@@ -71,7 +71,7 @@ module Fluent
 
       message_batch_by_topic = Hash.new { |hash, key| hash[key] = [] }
 
-      chunk.msgpack_each do |tag, time, record|
+      chunk.each do |tag, time, record|
         next unless record.is_a? Hash
         record.update(
           :_key => tag,
