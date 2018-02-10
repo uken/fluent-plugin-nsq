@@ -1,7 +1,7 @@
 # coding: utf-8
 
 module Fluent
-  class NSQOutput < BufferedOutput
+  class NSQOutput < Output
     Plugin.register_output('nsq', self)
 
     config_param :topic, :string, default: nil
