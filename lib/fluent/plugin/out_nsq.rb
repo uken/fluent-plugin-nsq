@@ -1,6 +1,6 @@
 # coding: utf-8
 
-module Fluent
+module Fluent::Plugin
   class NSQOutput < Output
     Plugin.register_output('nsq', self)
 
