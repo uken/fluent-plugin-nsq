@@ -41,7 +41,7 @@ module Fluent::Plugin
       log.info("nsq: start called!")
 
       nsq_producer_opts = {
-        nsqd: @nsqd,
+        nsqd: @nsqd.split(","),
       }
 
       if @use_tls
