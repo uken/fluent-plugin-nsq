@@ -23,7 +23,7 @@ module Fluent::Plugin
       compat_parameters_convert(conf, :buffer, :inject)
       super
 
-      log.info("nsq: configure called! @nsqd=#{@nsqd}, @topic=#{@topic}, @use_tls=#{@use_tls}, @tls_key=#{@tls_key}, @tls_cert=#{@tls_cert}")
+      log.info("nsq: configure called! @nsqd=#{@nsqd}, @topic=#{@topic}, @use_tls=#{@use_tls}, @tls_options=#{@tls_options}")
 
       fail ConfigError, 'Missing nsqd' unless @nsqd
       fail ConfigError, 'Missing topic' unless @topic
