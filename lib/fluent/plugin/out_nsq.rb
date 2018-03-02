@@ -7,7 +7,7 @@ module Fluent::Plugin
     config_param :topic, :string, default: nil
     config_param :nsqd, :string, default: nil
     config_param :use_tls, :bool, default: false
-    config_param :tls_options, :hash, default: nil
+    config_param :tls_options, :hash, default: nil, symbolize_keys: true
 
     helpers :compat_parameters, :inject
 
