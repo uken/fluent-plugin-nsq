@@ -7,8 +7,7 @@ module Fluent::Plugin
     config_param :topic, :string, default: nil
     config_param :nsqd, :string, default: nil
     config_param :use_tls, :bool, default: false
-    config_param :tls_key, :string, default: nil
-    config_param :tls_cert, :string, default: nil
+    config_param :tls_options, :hash, default: nil
 
     helpers :compat_parameters, :inject
 
@@ -30,8 +29,7 @@ module Fluent::Plugin
       fail ConfigError, 'Missing topic' unless @topic
 
       if @use_tls
-        fail ConfigError, 'Missing TLS key' unless @tls_key
-        fail ConfigError, 'Missing TLS key' unless @tls_cert
+        fail ConfigError, 'Missing TLS options' unless @tls_options
       end
     end
 
@@ -47,11 +45,7 @@ module Fluent::Plugin
       if @use_tls
         nsq_producer_opts.update({
           tls_v1: true,
-          tls_options: {
-              key: @tls_key,
-              certificate: @tls_cert,
-              verify_mode: OpenSSL::SSL::VERIFY_NONE
-          }
+          tls_options: @tls_options
         })
       end
 
