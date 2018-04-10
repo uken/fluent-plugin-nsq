@@ -1,8 +1,14 @@
 # coding: utf-8
+require 'fluent/input'
 
 module Fluent
   class NSQInput < Input
     Plugin.register_input('nsq', self)
+
+    # Define `router` method of v0.12 to support v0.10 or earlier
+    unless method_defined?(:router)
+      define_method("router") { Fluent::Engine }
+    end
 
     config_param :topic, :string, default: nil
     config_param :channel, :string, default: 'fluent_nsq_input'
@@ -53,9 +59,9 @@ module Fluent
     end
 
     def shutdown
-      super
       @running = false
       @consumer.terminate
+      super
     end
 
     private
@@ -70,7 +76,7 @@ module Fluent
       record = Yajl.load(msg.body.force_encoding('UTF-8'))
       record_tag = tag_for_record(record)
       record_time = time_for_record(record, msg)
-      Engine.emit(record_tag, record_time, record)
+      router.emit(record_tag, record_time, record)
       msg.finish
     rescue => e
       log.warn("nsq: #{e}")
