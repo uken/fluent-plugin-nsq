@@ -1,5 +1,7 @@
 # NSQ plugin for Fluentd
 
+Current maintainers: @cosmo0920
+
 Input and Output plugins for [nsq](http://nsq.io).
 
 NSQ daemons are discovered through lookupd.
