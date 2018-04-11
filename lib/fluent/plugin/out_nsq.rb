@@ -1,23 +1,25 @@
 # coding: utf-8
 
-module Fluent
-  class NSQOutput < BufferedOutput
-    Plugin.register_output('nsq', self)
+require 'fluent/plugin/output'
+require 'nsq'
+require 'yajl'
+
+module Fluent::Plugin
+  class NSQOutput < Output
+    Fluent::Plugin.register_output('nsq', self)
 
     config_param :topic, :string, default: nil
     config_param :nsqlookupd, :string, default: nil
 
-    def initialize
-      super
-      require 'nsq'
-      require 'yajl'
+    config_section :buffer do
+      config_set_default :chunk_keys, ['tag']
     end
 
     def configure(conf)
       super
 
-      fail ConfigError, 'Missing nsqlookupd' unless @nsqlookupd
-      fail ConfigError, 'Missing topic' unless @topic
+      fail Fluent::ConfigError, 'Missing nsqlookupd' unless @nsqlookupd
+      fail Fluent::ConfigError, 'Missing topic' unless @topic
     end
 
     def start
@@ -30,20 +32,15 @@ module Fluent
     end
 
     def shutdown
-      super
       @producer.terminate
-    end
-
-    def format(tag, time, record)
-      [tag, time, record].to_msgpack
+      super
     end
 
     def write(chunk)
       return if chunk.empty?
 
-      chunk.msgpack_each do |tag, time, record|
-        next unless record.is_a? Hash
-        # TODO get rid of this extra copy
+      tag = chunk.metadata.tag
+      chunk.each do |time, record|
         tagged_record = record.merge(
           :_key => tag,
           :_ts => time,
