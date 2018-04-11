@@ -11,7 +11,7 @@ module Fluent::Plugin
     config_param :topic, :string, default: nil
     config_param :channel, :string, default: 'fluent_nsq_input'
     config_param :in_flight, :integer, default: 100
-    config_param :nsqlookupd, :string, default: nil
+    config_param :nsqlookupd, :array, default: nil
     config_param :tag, :string, default: '_key'
     config_param :time_key, :string, default: nil
     config_param :tag_source, default: :key do |val|
@@ -38,9 +38,8 @@ module Fluent::Plugin
 
     def start
       super
-      lookupds = @nsqlookupd.split(',')
       @consumer = Nsq::Consumer.new(
-        nsqlookupd: lookupds,
+        nsqlookupd: @nsqlookupd,
         topic: @topic,
         channel: @channel,
         max_in_flight: @in_flight

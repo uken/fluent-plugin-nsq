@@ -9,7 +9,7 @@ module Fluent::Plugin
     Fluent::Plugin.register_output('nsq', self)
 
     config_param :topic, :string, default: nil
-    config_param :nsqlookupd, :string, default: nil
+    config_param :nsqlookupd, :array, default: nil
 
     config_section :buffer do
       config_set_default :chunk_keys, ['tag']
@@ -24,9 +24,8 @@ module Fluent::Plugin
 
     def start
       super
-      lookupds = @nsqlookupd.split(',')
       @producer = Nsq::Producer.new(
-        nsqlookupd: lookupds,
+        nsqlookupd: @nsqlookupd,
         topic: @topic
       )
     end
