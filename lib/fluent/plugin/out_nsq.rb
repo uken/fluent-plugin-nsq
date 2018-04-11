@@ -42,8 +42,8 @@ module Fluent::Plugin
       chunk.each do |time, record|
         tagged_record = record.merge(
           :_key => tag,
-          :_ts => time,
-          :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
+          :_ts => time.to_f,
+          :'@timestamp' => Time.at(time).iso8601(3) # kibana/elasticsearch friendly
         )
         begin
           @producer.write(Yajl.dump(tagged_record))

@@ -88,7 +88,7 @@ module Fluent::Plugin
       if @time_key
         record[@time_key]
       else
-        msg.timestamp.to_i
+        Fluent::EventTime.new(msg.timestamp.to_i, msg.timestamp.nsec)
       end
     end
   end
