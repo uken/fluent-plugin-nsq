@@ -1,6 +1,7 @@
 require 'test/unit'
 
 require 'fluent/test'
+require 'fluent/test/driver/output'
 require 'fluent/plugin/out_nsq'
 
 require 'date'
@@ -25,8 +26,8 @@ class TestNSQOutput < Test::Unit::TestCase
     assert_not_nil d.instance.topic
   end
 
-  def create_driver(tag='test', conf=TCONFIG)
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::NSQOutput, tag).configure(conf, true)
+  def create_driver(conf=TCONFIG)
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::NSQOutput).configure(conf)
   end
 
   def sample_record
@@ -35,15 +36,16 @@ class TestNSQOutput < Test::Unit::TestCase
 
   def test_wrong_config
     assert_raise Fluent::ConfigError do
-      create_driver('test','')
+      create_driver('')
     end
   end
 
   def test_sample_record_loop
     d = create_driver
-    100.times.each do |t|
-      d.emit(sample_record)
+    d.run(default_tag: 'test') do
+      100.times.each do |t|
+        d.feed(sample_record)
+      end
     end
-    d.run
   end
 end
