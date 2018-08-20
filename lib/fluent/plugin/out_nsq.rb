@@ -1,3 +1,5 @@
+require 'rest-client'
+
 # coding: utf-8
 
 module Fluent::Plugin
@@ -35,29 +37,12 @@ module Fluent::Plugin
 
     def start
       super
-
       log.info("nsq: start called!")
-
-      nsq_producer_opts = {
-        nsqd: @nsqd.split(","),
-      }
-
-      if @use_tls
-        nsq_producer_opts.update({
-          tls_v1: true,
-          tls_options: @tls_options
-        })
-      end
-
-      @producer = Nsq::Producer.new(nsq_producer_opts)
     end
 
     def shutdown
       super
-
       log.info("nsq: shutdown called!")
-
-      @producer.terminate
     end
 
     def format(tag, time, record)
@@ -89,7 +74,23 @@ module Fluent::Plugin
       topic = extract_placeholders(@topic, chunk.metadata)
 
       log.debug("nsq: posting #{message_batch.length} messages to topic #{topic}")
-      @producer.write_to_topic(topic, *message_batch)
+
+
+
+      write_to_topic_http topic, message_batch
+    end
+
+    def write_to_topic_http(topic, messages)
+      messages = messages.map(&:to_s)
+      if messages.length > 1
+        payload =  '\n'.join(messages)
+        endpoint = "mpub"
+      else
+        payload = messages.first
+        endpoint = "pub"
+      end
+      url = "http://#{@nsqd}/#{topic}/#{endpoint}"
+      RestClient.post(url, payload, headers={})
     end
   end
 end
