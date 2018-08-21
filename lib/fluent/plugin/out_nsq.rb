@@ -55,6 +55,9 @@ module Fluent::Plugin
     end
 
     def write(chunk)
+
+      log.info("nsq: write began!")
+
       return if chunk.empty?
 
       message_batch = []
