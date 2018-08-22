@@ -94,6 +94,7 @@ module Fluent::Plugin
       url = "http://#{@nsqd}/#{endpoint}?topic=#{topic}"
 
       log.debug("url: #{url}")
+      log.debug("payload: #{payload}")
 
       RestClient.post(url, payload, headers={})
     end
