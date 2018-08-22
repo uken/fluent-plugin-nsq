@@ -84,7 +84,7 @@ module Fluent::Plugin
     def write_to_topic_http(topic, messages)
       messages = messages.map(&:to_s)
       if messages.length > 1
-        payload =  messages.join('\n')
+        payload =  messages.join("\n")
         endpoint = "mpub"
       else
         payload = messages.first
