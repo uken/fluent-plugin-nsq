@@ -91,7 +91,7 @@ module Fluent::Plugin
         endpoint = "pub"
       end
 
-      url = "http://#{@nsqd}/#{topic}/#{endpoint}"
+      url = "http://#{@nsqd}/#{endpoint}?topic=#{topic}"
 
       log.debug("url: #{url}")
 
