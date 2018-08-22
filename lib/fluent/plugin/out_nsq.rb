@@ -90,7 +90,11 @@ module Fluent::Plugin
         payload = messages.first
         endpoint = "pub"
       end
+
       url = "http://#{@nsqd}/#{topic}/#{endpoint}"
+
+      log.debug("url: #{url}")
+
       RestClient.post(url, payload, headers={})
     end
   end
