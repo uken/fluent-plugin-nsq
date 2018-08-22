@@ -1,5 +1,3 @@
-require 'rest-client'
-
 # coding: utf-8
 
 module Fluent::Plugin
@@ -15,8 +13,8 @@ module Fluent::Plugin
 
     def initialize
       super
-      require 'nsq'
       require 'yajl'
+      require 'rest-client'
 
       log.info("nsq: initialize called!")
     end
@@ -86,7 +84,7 @@ module Fluent::Plugin
     def write_to_topic_http(topic, messages)
       messages = messages.map(&:to_s)
       if messages.length > 1
-        payload =  '\n'.join(messages)
+        payload =  messages.join('\n')
         endpoint = "mpub"
       else
         payload = messages.first
