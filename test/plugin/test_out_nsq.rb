@@ -1,49 +1,156 @@
-require 'test/unit'
-
 require 'fluent/test'
+require 'fluent/test/driver/output'
+require 'fluent/test/helpers'
 require 'fluent/plugin/out_nsq'
-
-require 'date'
-
-require 'helper'
-
-$:.push File.expand_path("../lib", __FILE__)
-$:.push File.dirname(__FILE__)
+require 'securerandom'
+require 'json'
 
 class TestNSQOutput < Test::Unit::TestCase
-  TCONFIG = %[
-    nsqlookupd localhost:4161
-    topic logs_out
-  ]
-  def setup
-    #Nsq.logger = Logger.new(STDOUT)
+
+  LOGS_DIR = '/tmp/fluent-plugin-nsq-tests'
+  MAX_TOPIC_LENGTH = 64
+  MAX_MESSAGE_SIZE = 1024
+  MAX_BODY_SIZE = 5 * 1024
+
+  include Fluent::Test::Helpers
+
+  setup do
     Fluent::Test.setup
+    ensure_test_env
   end
 
-  def test_configure
-    d = create_driver
-    assert_not_nil d.instance.topic
+  def ensure_test_env
+    # TODO: execute docker-compose up
   end
 
-  def create_driver(tag='test', conf=TCONFIG)
-    Fluent::Test::BufferedOutputTestDriver.new(Fluent::NSQOutput, tag).configure(conf, true)
+  def create_config_for_topic(topic_name)
+    %[
+    nsqd localhost:4151
+    topic #{topic_name}
+    ]
   end
 
-  def sample_record
-    {'age' => 26, 'request_id' => '42', 'parent_id' => 'parent', 'sub' => {'field'=>{'pos'=>15}}}
+  def get_random_test_id
+    'test_' + SecureRandom.hex[0, 10]
   end
 
-  def test_wrong_config
-    assert_raise Fluent::ConfigError do
-      create_driver('test','')
+  def create_driver(conf = {}, handle_write_errors = false)
+    if !handle_write_errors
+      Fluent::Test::Driver::Output.new(Fluent::Plugin::NSQOutput).configure(conf)
+    else
+      d = Fluent::Test::Driver::Output.new(Fluent::Plugin::NSQOutput) do
+        alias old_write write
+
+        def raised_exceptions
+          return @raised_exceptions
+        end
+
+        def write(chunk)
+          @raised_exceptions = []
+          old_write chunk
+        rescue => e
+          @raised_exceptions << e
+        end
+      end
+      d.configure(conf)
     end
   end
 
-  def test_sample_record_loop
-    d = create_driver
-    100.times.each do |t|
-      d.emit(sample_record)
+  def send_messages(driver, messages, tag = 'test')
+    messages_records = messages.map {|message| [event_time, {"message" => message}]}
+    es = Fluent::ArrayEventStream.new(messages_records)
+    driver.run do
+      driver.feed(tag, es)
     end
-    d.run
   end
+
+  def assert_messages_received(test_id, messages)
+    wait_for_queue_to_clean test_id
+    log_file_loc = "#{LOGS_DIR}/#{test_id}.log"
+    assert_equal(true, File.file?(log_file_loc), "log file doesn't exists for test_id: #{log_file_loc}")
+    assert_all_messages_in_file(messages, log_file_loc)
+  end
+
+  def assert_no_messages_received(topic)
+    wait_for_queue_to_clean topic
+    log_file_loc = "#{LOGS_DIR}/#{topic}.log"
+    assert_equal(false, File.file?(log_file_loc), "log file exists although it should not: #{log_file_loc}")
+  end
+
+  def assert_all_messages_in_file(messages, log_file_loc)
+    messages_from_file = extract_messages_from_file log_file_loc
+    assert_equal(messages_from_file.length, messages.length, "Messages count in log file is different that expected: expected: #{messages.length} actual:#{messages_from_file.length}, file: #{log_file_loc}")
+    messages_xor = messages + messages_from_file - (messages & messages_from_file)
+    assert_equal(0, messages_xor.length, "Messages in log file are different than expected ones: expected: #{messages}, actual: (in file: #{log_file_loc}) #{messages_from_file}")
+  end
+
+  def extract_messages_from_file(file_location)
+    messages = Set.new
+    File.open(file_location) do |file|
+      file.each do |line|
+        parsed_line = JSON.parse(line)
+        message = parsed_line["message"]
+        assert_not_nil(message, "field 'message' does not exists in line [log file: #{file_location}]")
+        assert_not_nil(messages.add?(message), "duplicated message in file #{file_location}")
+      end
+    end
+    messages
+  end
+
+  def wait_for_queue_to_clean(topic)
+    sleep(2)
+  end
+
+  def assert_request_failed(driver, expected_message)
+    assert_equal(1, driver.instance.raised_exceptions.length)
+    raised_exception = driver.instance.raised_exceptions.first
+    assert_kind_of(RestClient::RequestFailed, raised_exception)
+    assert_not_nil(raised_exception.response)
+    assert_includes(raised_exception.response.to_s, expected_message)
+  end
+
+  test 'send messages to nsq' do
+    test_id = get_random_test_id
+    d = create_driver(config = create_config_for_topic(test_id))
+
+    messages = Set['message1', 'message2', 'message3']
+    send_messages(d, messages)
+
+    assert_messages_received(test_id, messages)
+  end
+
+  test 'send messages with a topic that exceeds 64 chars' do
+    too_long_topic_name = "a" * (MAX_TOPIC_LENGTH + 1)
+    d = create_driver(create_config_for_topic(too_long_topic_name), handle_write_errors=true)
+
+    messages = Set['message1', 'message2', 'message3']
+    send_messages(d, messages)
+
+    assert_request_failed(d, "INVALID_TOPIC")
+    assert_no_messages_received(too_long_topic_name)
+  end
+
+  test 'send a message with a length that exceeds MAX_MESSAGE_SIZE' do
+    test_id = get_random_test_id
+    d = create_driver(config = create_config_for_topic(test_id), handle_write_errors=true)
+
+    too_big_message = "a" * (MAX_MESSAGE_SIZE + 1)
+    messages = Set[too_big_message]
+    send_messages(d, messages)
+
+    assert_request_failed(d, "MSG_TOO_BIG")
+    assert_no_messages_received(test_id)
+  end
+
+  test 'send messages with a total sum that exceeds MAX_BODY_SIZE' do
+    test_id = get_random_test_id
+    d = create_driver(config = create_config_for_topic(test_id), handle_write_errors=true)
+
+    messages = Array.new(MAX_BODY_SIZE, "a")
+    send_messages(d, messages)
+
+    assert_request_failed(d, "BODY_TOO_BIG")
+    assert_no_messages_received(test_id)
+  end
+
 end

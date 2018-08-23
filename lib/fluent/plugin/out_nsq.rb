@@ -1,6 +1,12 @@
 # coding: utf-8
 
 module Fluent::Plugin
+  class WriteToNsqError < StandardError
+    def initialize(msg="NSQD returned an error")
+      super
+    end
+  end
+
   class NSQOutput < Output
     Fluent::Plugin.register_output('nsq', self)
 
@@ -63,9 +69,9 @@ module Fluent::Plugin
       chunk.msgpack_each do |tag, time, record|
         next unless record.is_a? Hash
         record.update(
-          :_key => tag,
-          :_ts => time,
-          :'@timestamp' => Time.at(time).to_datetime.to_s  # kibana/elasticsearch friendly
+            :_key => tag,
+            :_ts => time,
+            :'@timestamp' => Time.at(time).to_datetime.to_s # kibana/elasticsearch friendly
         )
         serialized_record = Yajl.dump(record)
 
@@ -76,15 +82,13 @@ module Fluent::Plugin
 
       log.debug("nsq: posting #{message_batch.length} messages to topic #{topic}")
 
-
-
       write_to_topic_http topic, message_batch
     end
 
     def write_to_topic_http(topic, messages)
       messages = messages.map(&:to_s)
       if messages.length > 1
-        payload =  messages.join("\n")
+        payload = messages.join("\n")
         endpoint = "mpub"
       else
         payload = messages.first
@@ -96,7 +100,11 @@ module Fluent::Plugin
       log.debug("url: #{url}")
       log.debug("payload: #{payload}")
 
-      RestClient.post(url, payload, headers={})
+      RestClient.post(url, payload, headers = {})
+
+    rescue RestClient::RequestFailed => e
+      e.message = e.response.to_s
+      raise e
     end
   end
 end

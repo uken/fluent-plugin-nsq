@@ -1,0 +1,30 @@
+version: '3'
+services:
+  nsqlookupd:
+    image: nsqio/nsq:v0.3.8
+    command: /nsqlookupd
+    ports:
+    - "4160:4160"
+    - "4161:4161"
+  nsqd:
+    image: nsqio/nsq:v0.3.8
+    command: /nsqd --max-msg-size=1024 --max-body-size=5120 --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+    - nsqlookupd
+    ports:
+    - "4150:4150"
+    - "4151:4151"
+  nsqadmin:
+    image: nsqio/nsq:v0.3.8
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+    - nsqlookupd
+    ports:
+    - "4171:4171"
+  nsq_to_file:
+    image: nsqio/nsq:v0.3.8
+    command: /nsq_to_file --topic-refresh=1s --lookupd-http-address=nsqlookupd:4161 --topic-pattern=test_* --output-dir=/tmp --filename-format=<TOPIC>.log
+    volumes:
+      - /tmp/fluent-plugin-nsq-tests:/tmp
+    depends_on:
+    - nsqd
