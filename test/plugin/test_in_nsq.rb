@@ -1,6 +1,7 @@
 require 'test/unit'
 
 require 'fluent/test'
+require 'fluent/test/driver/input'
 require 'fluent/plugin/in_nsq'
 
 require 'date'
@@ -27,7 +28,7 @@ class TestNSQInput < Test::Unit::TestCase
   end
 
   def create_driver(conf=TCONFIG)
-    Fluent::Test::InputTestDriver.new(Fluent::NSQInput).configure(conf)
+    Fluent::Test::Driver::Input.new(Fluent::Plugin::NSQInput).configure(conf)
   end
 
   def create_producer
@@ -60,6 +61,6 @@ class TestNSQInput < Test::Unit::TestCase
       prod.terminate
     end
     puts("emitz")
-    puts(d.emits)
+    puts(d.events)
   end
 end
