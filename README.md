@@ -51,7 +51,7 @@ Create a gemset for the project
      $ cd ..; cd-
      $ rvm rvmrc to ruby-version
 
-### Install dependencies
+### Install dependencies:
     $ bundle install
 
 ## Running the tests
