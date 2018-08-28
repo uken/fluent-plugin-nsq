@@ -29,9 +29,32 @@ NSQ daemons are discovered through lookupd.
       topic logs
     </match>
 
-## dev
+## Local Setup
 
-Don't forget to tag releases properly.
+### Configure RVM:
+Install RVM
 
-    git tag v$(head -1 VERSION)
-    git push --tags
+     $ \curl -sSL https://get.rvm.io | bash -s stable
+     $ source /Users/<user>/.rvm/scripts/rvm
+
+Download and use Ruby 2.5.1
+
+     $ rvm install 2.5.1
+     $ rvm docs generate-ri  
+     $ rvm use 2.5.1
+
+Create a gemset for the project
+
+     $ cd <gitroot>/fluent-plugin-nsq
+     $ rvm gemset create fluent-plugin-nsq
+     $ rvm --rvmrc ruby-2.5.1@fluent-plugin-nsq
+     $ cd ..; cd-
+     $ rvm rvmrc to ruby-version
+
+### Install dependencies
+    $ bundle install
+
+## Running the tests
+     $ cd <gitroot>/fluent-plugin-nsq/docker
+     $ docker-compose up
+     $ ruby <gitroot>/fluent-plugin-nsq/test/plugin/test_out_nsq.rb
