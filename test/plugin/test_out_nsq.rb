@@ -1,9 +1,9 @@
 require 'fluent/test'
 require 'fluent/test/driver/output'
 require 'fluent/test/helpers'
-require 'fluent/plugin/out_nsq'
 require 'securerandom'
 require 'json'
+require_relative '../../lib/fluent/plugin/out_nsq'
 
 class TestNSQOutput < Test::Unit::TestCase
 
