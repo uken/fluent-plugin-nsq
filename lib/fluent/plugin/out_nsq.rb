@@ -1,11 +1,6 @@
 # coding: utf-8
 
 module Fluent::Plugin
-  class WriteToNsqError < StandardError
-    def initialize(msg="NSQD returned an error")
-      super
-    end
-  end
 
   class NSQOutput < Output
     Fluent::Plugin.register_output('nsq', self)
@@ -98,7 +93,6 @@ module Fluent::Plugin
       url = "http://#{@nsqd}/#{endpoint}?topic=#{topic}"
 
       log.debug("url: #{url}")
-      log.debug("payload: #{payload}")
 
       RestClient.post(url, payload, headers = {})
 
