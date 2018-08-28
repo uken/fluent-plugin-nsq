@@ -16,11 +16,6 @@ class TestNSQOutput < Test::Unit::TestCase
 
   setup do
     Fluent::Test.setup
-    ensure_test_env
-  end
-
-  def ensure_test_env
-    # TODO: execute docker-compose up
   end
 
   def create_config_for_topic(topic_name)
@@ -80,6 +75,7 @@ class TestNSQOutput < Test::Unit::TestCase
   def assert_all_messages_in_file(messages, log_file_loc)
     messages_from_file = extract_messages_from_file log_file_loc
     assert_equal(messages_from_file.length, messages.length, "Messages count in log file is different that expected: expected: #{messages.length} actual:#{messages_from_file.length}, file: #{log_file_loc}")
+    # TODO change to regular comparison
     messages_xor = messages + messages_from_file - (messages & messages_from_file)
     assert_equal(0, messages_xor.length, "Messages in log file are different than expected ones: expected: #{messages}, actual: (in file: #{log_file_loc}) #{messages_from_file}")
   end
@@ -98,6 +94,7 @@ class TestNSQOutput < Test::Unit::TestCase
   end
 
   def wait_for_queue_to_clean(topic)
+    # TODO: use stats EP with timeout
     sleep(2)
   end
 
@@ -107,6 +104,16 @@ class TestNSQOutput < Test::Unit::TestCase
     assert_kind_of(RestClient::RequestFailed, raised_exception)
     assert_not_nil(raised_exception.response)
     assert_includes(raised_exception.response.to_s, expected_message)
+  end
+
+  test 'send a single message to nsq' do
+    test_id = get_random_test_id
+    d = create_driver(config = create_config_for_topic(test_id))
+
+    messages = Set['message1']
+    send_messages(d, messages)
+
+    assert_messages_received(test_id, messages)
   end
 
   test 'send messages to nsq' do
@@ -140,13 +147,14 @@ class TestNSQOutput < Test::Unit::TestCase
 
     assert_request_failed(d, "MSG_TOO_BIG")
     assert_no_messages_received(test_id)
+
   end
 
   test 'send messages with a total sum that exceeds MAX_BODY_SIZE' do
     test_id = get_random_test_id
     d = create_driver(config = create_config_for_topic(test_id), handle_write_errors=true)
 
-    messages = Array.new(MAX_BODY_SIZE, "a")
+    messages = Array.new(MAX_BODY_SIZE + 1, "a")
     send_messages(d, messages)
 
     assert_request_failed(d, "BODY_TOO_BIG")
