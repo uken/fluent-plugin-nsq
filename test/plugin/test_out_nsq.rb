@@ -3,6 +3,7 @@ require 'fluent/test/driver/output'
 require 'fluent/test/helpers'
 require 'securerandom'
 require 'json'
+require 'timeout'
 require_relative '../../lib/fluent/plugin/out_nsq'
 
 class TestNSQOutput < Test::Unit::TestCase
@@ -94,8 +95,51 @@ class TestNSQOutput < Test::Unit::TestCase
   end
 
   def wait_for_queue_to_clean(topic)
-    # TODO: use stats EP with timeout
-    sleep(2)
+    if topic_exists? topic
+      Timeout::timeout(60) do
+        all_messages_processed = false
+        until all_messages_processed
+          topic_stats = get_stats_for_topic topic
+          if topic_stats["depth"] != 0
+            next
+          end
+          if topic_stats["message_count"] != 0
+            if topic_stats["channels"] && topic_stats["channels"].length == 1
+              nsq_to_file_chan = topic_stats["channels"][0]
+              if nsq_to_file_chan["depth"] == 0 && topic_stats["message_count"] == nsq_to_file_chan["message_count"]
+                all_messages_processed = true
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def get_stats_for_topic(topic)
+    stats_response = RestClient.get("http://localhost:4151/stats?topic=#{topic}&format=json")
+    parsed_response = JSON.parse(stats_response)
+    topics = parsed_response["data"]["topics"]
+    if topics && topics.length == 1
+      topics[0]
+    else
+      nil
+    end
+  end
+
+  def topic_exists?(topic)
+    topic_exists = false
+    begin
+      topic_exists = Timeout::timeout(2) do
+        until get_stats_for_topic topic != nil do
+          sleep 0.01
+        end
+        true
+      end
+    rescue Timeout::Error
+      false
+    end
+    topic_exists
   end
 
   def assert_request_failed(driver, expected_message)
@@ -128,7 +172,7 @@ class TestNSQOutput < Test::Unit::TestCase
 
   test 'send messages with a topic that exceeds 64 chars' do
     too_long_topic_name = "a" * (MAX_TOPIC_LENGTH + 1)
-    d = create_driver(create_config_for_topic(too_long_topic_name), handle_write_errors=true)
+    d = create_driver(create_config_for_topic(too_long_topic_name), handle_write_errors = true)
 
     messages = Set['message1', 'message2', 'message3']
     send_messages(d, messages)
@@ -139,7 +183,7 @@ class TestNSQOutput < Test::Unit::TestCase
 
   test 'send a message with a length that exceeds MAX_MESSAGE_SIZE' do
     test_id = get_random_test_id
-    d = create_driver(config = create_config_for_topic(test_id), handle_write_errors=true)
+    d = create_driver(config = create_config_for_topic(test_id), handle_write_errors = true)
 
     too_big_message = "a" * (MAX_MESSAGE_SIZE + 1)
     messages = Set[too_big_message]
@@ -152,7 +196,7 @@ class TestNSQOutput < Test::Unit::TestCase
 
   test 'send messages with a total sum that exceeds MAX_BODY_SIZE' do
     test_id = get_random_test_id
-    d = create_driver(config = create_config_for_topic(test_id), handle_write_errors=true)
+    d = create_driver(config = create_config_for_topic(test_id), handle_write_errors = true)
 
     messages = Array.new(MAX_BODY_SIZE + 1, "a")
     send_messages(d, messages)
