@@ -99,6 +99,7 @@ class TestNSQOutput < Test::Unit::TestCase
       Timeout::timeout(60) do
         all_messages_processed = false
         until all_messages_processed
+          sleep 0.01
           topic_stats = get_stats_for_topic topic
           if topic_stats["depth"] != 0
             next
